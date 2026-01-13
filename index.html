@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI ChatBot</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    font-family: "Segoe UI", Tahoma, sans-serif;
+}
+
+body {
+    margin: 0;
+    height: 100vh;
+    background: linear-gradient(135deg,#e6e6e6,#c98bdc,#4a78c2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Chat Card */
+.chat-container {
+    width: 420px;
+    height: 600px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(12px);
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+}
+
+/* Header */
+.chat-header {
+    padding: 15px;
+    text-align: center;
+    background: rgba(0,0,0,0.25);
+    color: white;
+    font-size: 20px;
+    font-weight: 300;
+}
+
+/* Messages */
+.chat-box {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+}
+
+/* Message bubble */
+.message {
+    max-width: 75%;
+    padding: 10px 14px;
+    margin: 8px 0;
+    border-radius: 15px;
+    line-height: 1.5;
+    animation: fadeIn 0.3s ease;
+    word-wrap: break-word;
+}
+
+.user {
+    background: rgba(255,255,255,0.35);
+    margin-left: auto;
+    border-bottom-right-radius: 4px;
+}
+
+.bot {
+    background: rgba(0,0,0,0.35);
+    color: white;
+    margin-right: auto;
+    border-bottom-left-radius: 4px;
+}
+
+/* Typing indicator */
+.typing {
+    display: flex;
+    align-items: center;
+    margin: 8px 0;
+    max-width: 60%;
+    padding: 10px 14px;
+    border-radius: 15px;
+    background: rgba(0,0,0,0.35);
+    color: white;
+    font-size: 14px;
+}
+
+.typing span {
+    display: inline-block;
+    margin-left: 4px;
+    animation: blink 1.4s infinite both;
+}
+
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
+
+/* Input area */
+.chat-input {
+    display: flex;
+    padding: 12px;
+    background: rgba(0,0,0,0.2);
+}
+
+.chat-input input {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    outline: none;
+    font-size: 14px;
+}
+
+.chat-input button {
+    margin-left: 8px;
+    padding: 0 16px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    background: #4a78c2;
+    color: white;
+    font-size: 16px;
+}
+
+.chat-input button:hover {
+    background: #355fa3;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes blink {
+    0% { opacity: .2; }
+    20% { opacity: 1; }
+    100% { opacity: .2; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="chat-container">
+    <div class="chat-header">AI ChatBot</div>
+
+    <div class="chat-box" id="chatBox">
+        <!-- رسالة ترحيب اختيارية -->
+        <div class="message bot">Hi! I’m your AI assistant. Ask me anything about AI.</div>
+    </div>
+
+    <div class="chat-input">
+        <input type="text" id="userInput" placeholder="Ask me anything..."
+               onkeydown="if(event.key==='Enter') sendMessage()">
+        <button onclick="sendMessage()">➤</button>
+    </div>
+</div>
+
+<script>
+async function sendMessage() {
+    const input = document.getElementById("userInput");
+    const text = input.value.trim();
+    if (!text) return;
+
+    addMessage(text, "user");
+    input.value = "";
+
+    const typingEl = showTyping();
+
+    try {
+        const response = await fetch("http://127.0.0.1:5000/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: text })
+        });
+
+        const data = await response.json();
+        removeTyping(typingEl);
+        addMessage(data.reply || "No response from AI.", "bot");
+
+    } catch (err) {
+        removeTyping(typingEl);
+        addMessage("Error connecting to server.", "bot");
+    }
+}
+
+function addMessage(text, sender) {
+    const chatBox = document.getElementById("chatBox");
+    const msg = document.createElement("div");
+    msg.className = "message " + sender;
+    msg.textContent = text;
+    chatBox.appendChild(msg);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function showTyping() {
+    const chatBox = document.getElementById("chatBox");
+    const typing = document.createElement("div");
+    typing.className = "typing";
+    typing.innerHTML = `AI is typing<span>.</span><span>.</span><span>.</span>`;
+    chatBox.appendChild(typing);
+    chatBox.scrollTop = chatBox.scrollHeight;
+    return typing;
+}
+
+function removeTyping(el) {
+    if (el) el.remove();
+}
+</script>
+
+</body>
+</html>
