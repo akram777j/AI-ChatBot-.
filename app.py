@@ -1,20 +1,33 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 import os
 import openai
 
 app = Flask(__name__)
-CORS(app)  # <<< هذا السطر مهم جدًا
 
+# تفعيل CORS لكل التطبيق
+CORS(app)
+
+# مفتاح OpenAI من Environment Variables
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
+
+# صفحة رئيسية (لتجنب 404)
 @app.route("/", methods=["GET"])
 def home():
     return "AI ChatBot backend is running"
 
-@app.route("/chat", methods=["POST"])
+
+# مسار الشات (يدعم POST + OPTIONS)
+@app.route("/chat", methods=["POST", "OPTIONS"])
+@cross_origin()
 def chat():
+    # التعامل مع طلب OPTIONS (CORS preflight)
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"}), 200
+
     data = request.get_json()
+
     if not data or "message" not in data:
         return jsonify({"reply": "No message received"}), 400
 
@@ -36,6 +49,7 @@ def chat():
         return jsonify({"reply": str(e)}), 500
 
 
+# تشغيل السيرفر على Render
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
